@@ -24,13 +24,15 @@ var unitInMillis = map[string]int64 {
 }
 
 func ParseDuration(s string) (int64, error) {
-	return parseDuration(tokenise(s))
+	if len(s) == 0 {
+		return 0, errors.New("Could not parse empty string into duration")
+	} else {
+		return parseDuration(tokenise(s))
+	}
 }
 
 func parseDuration(tokens []token) (int64, error) {
-	if len(tokens) == 0 {
-		return 0, nil
-	} else if len(tokens) == 1 {
+	if len(tokens) == 1 {
 		return 0, errors.New(fmt.Sprintf("unexpected token '%s'", tokens[0].value))
 	}
 

@@ -18,15 +18,13 @@ type token struct {
 	tokenType tokenType
 }
 
-type readPred func(rune) bool
-
 func read(s string, offset int, pred readPred) string {
 	var value bytes.Buffer
 
-	for x := 0; (offset + x) < len(s); x ++ {
-		c := s[offset + x]
-		if pred(rune(c)) {
-			value.WriteString(string(c))
+	for i := offset; i < len(s); i ++ {
+		r := rune(s[i])
+		if pred(r) {
+			value.WriteRune(r)
 		} else {
 			break
 		}
@@ -36,8 +34,13 @@ func read(s string, offset int, pred readPred) string {
 }
 
 
+type readPred func(rune) bool
+
 func tokenise(s string) []token {
-	var result []token
+
+	isOther := func(r rune) bool {
+		return !(unicode.IsDigit(r) || unicode.IsLetter(r) || unicode.IsSpace(r))
+	} 
 
 	predicates := []struct {
 		Predicate readPred
@@ -45,30 +48,30 @@ func tokenise(s string) []token {
 	} { 
 		{ unicode.IsDigit, TOKEN_TYPE_NUMERIC },
 		{ unicode.IsLetter, TOKEN_TYPE_STRING },
+		{ isOther, TOKEN_TYPE_OTHER },
 	}
 
+	var result []token
+
 	for i := 0; i < len(s); {
+		//peek at this character
 		r := rune(s[i])
+
+		//skip if it's whitespace
 		if unicode.IsSpace(r) {
 			i += 1
 			continue
 		}
 
-		tokenRead := false
-
+		//otherwise, consume as much of this type of character as possible and whack it in a token
 		for _, p := range predicates {
 			if (p.Predicate(r)) {
 				value := read(s, i, p.Predicate)
 				result = append(result, token { value, p.TokenType })
+				//advance by the number of characters we read
 				i += len(value)
-				tokenRead = true
 				break
 			}
-		}
-
-		if !tokenRead {
-			result = append(result, token { string(r), TOKEN_TYPE_OTHER })
-			i += 1
 		}
 	}
 
