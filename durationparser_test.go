@@ -37,7 +37,7 @@ func TestParseDuration(t *testing.T) {
 			if err != nil {
 				t.Errorf("Unexpected error '%s' for input '%s'", err, c.Input)
 			}
-			if c.Result != r {
+			if c.Result != r.Millis() {
 				t.Errorf("Expected %d actual %d", c.Result, r)
 			}
 		}

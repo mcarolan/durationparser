@@ -23,34 +23,46 @@ var unitInMillis = map[string]int64 {
 	"years": 31536000000,
 }
 
-func ParseDuration(s string) (int64, error) {
+type Duration interface {
+	Millis() int64
+}
+
+func ParseDuration(s string) (Duration, error) {
 	if len(s) == 0 {
-		return 0, errors.New("Could not parse empty string into duration")
+		return nil, errors.New("Could not parse empty string into duration")
 	} else {
 		return parseDuration(tokenise(s))
 	}
 }
 
-func parseDuration(tokens []token) (int64, error) {
+type constantDuration struct {
+	millis int64
+}
+
+func (c constantDuration) Millis() int64 {
+	return c.millis
+}
+
+func parseDuration(tokens []token) (Duration, error) {
 	if len(tokens) == 1 {
-		return 0, errors.New(fmt.Sprintf("unexpected token '%s'", tokens[0].value))
+		return nil, errors.New(fmt.Sprintf("unexpected token '%s'", tokens[0].value))
 	}
 
 	quantityToken := tokens[0]
 	unit := tokens[1]
 
 	if quantityToken.tokenType != TOKEN_TYPE_NUMERIC {
-		return 0, errors.New(fmt.Sprintf("expected quantity, actually got '%s'", quantityToken.value))
+		return nil, errors.New(fmt.Sprintf("expected quantity, actually got '%s'", quantityToken.value))
 	}
 
 	if unit.tokenType != TOKEN_TYPE_STRING {
-		return 0, errors.New(fmt.Sprintf("expected unit, actually got '%s'", unit.value))
+		return nil, errors.New(fmt.Sprintf("expected unit, actually got '%s'", unit.value))
 	}
 
 	value, ok := unitInMillis[unit.value]
 
 	if !ok {
-		return 0, errors.New(fmt.Sprintf("'%s', is not a valid unit", unit.value))
+		return nil, errors.New(fmt.Sprintf("'%s', is not a valid unit", unit.value))
 	}
 
 	quantity, _ := strconv.Atoi(quantityToken.value)
@@ -66,11 +78,11 @@ func parseDuration(tokens []token) (int64, error) {
 		remaining, err := parseDuration(tokens[startIndex:])
 
 		if err != nil {
-			return 0, err
+			return nil, err
 		}
 
-		result += remaining
+		result += remaining.Millis()
 	}
 
-	return result, nil
+	return constantDuration { result }, nil
 }
